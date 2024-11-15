@@ -32,6 +32,26 @@ def dias_uteis(ini_data, fim_data, ano):
     dias_uteis = [dia for dia in todos_os_dias if dia.weekday() < 5 and dia not in feriados_brasil]
     return len(dias_uteis)
 
+# Função para calcular os dias totais entre duas datas
+def dias_totais(ini_data, fim_data):
+    todos_os_dias = pd.date_range(start=ini_data, end=fim_data)
+    return len(todos_os_dias)
+
+# Função para calcular a taxa diária e depois calcular a taxa mensal
+def calcular_taxa_mensal(pagamento_inicial, pagamento_final, data_inicio, data_fim):
+    # Calcular a diferença percentual
+    diferenca_percentual = (pagamento_final - pagamento_inicial) / pagamento_inicial
+    
+    # Calcular a diferença de dias úteis
+    dias_uteis_diferenca = dias_uteis(data_inicio, data_fim, data_inicio.year)
+    
+    # Calcular a taxa diária
+    taxa_diaria = diferenca_percentual / dias_uteis_diferenca
+    
+    # Calcular a taxa mensal (considerando 21 dias úteis por mês)
+    taxa_mensal = taxa_diaria * 21
+    return taxa_mensal
+
 # Função chamada quando o botão "Calcular" é pressionado
 def calcular():
     # Pegando os valores dos campos de entrada
@@ -47,6 +67,9 @@ def calcular():
 
         # Calculando o número de dias úteis entre as datas
         dias_uteis_comprovados = dias_uteis(data_inicio, data_fim, data_inicio.year)
+        
+        # Calculando os dias totais entre as datas
+        dias_totais_comprovados = dias_totais(data_inicio, data_fim)
 
         # Calculando o valor futuro com e sem o pagamento
         valor_futuro = calcular_valor_futuro(valor_investido, cdi_diario, dias_uteis_comprovados)
@@ -55,14 +78,22 @@ def calcular():
         pagamento_com_juros = float(pagamento_com_juros_entry.get())
         pagamento_sem_juros = float(pagamento_sem_juros_entry.get())
 
-        # Cálculo dos valores futuros considerando os pagamentos
+        # Cálculo do valor futuro com pagamento de juros
         valor_futuro_com_pagamento_juros = valor_futuro - pagamento_com_juros
+        
+        # Cálculo do valor futuro considerando o pagamento sem juros
         valor_futuro_pagamento_sem_juros = (valor_investido - pagamento_sem_juros) * (1 + cdi_diario) ** dias_uteis_comprovados
+
+        # Calculando a taxa mensal implícita
+        taxa_mensal = calcular_taxa_mensal(pagamento_sem_juros, pagamento_com_juros, data_inicio, data_fim)
 
         # Exibindo os resultados
         resultado_label.config(text=f"Valor futuro com juros: R$ {valor_futuro:.2f}\n"
-                                   f"Valor com pagamento de R$ {pagamento_com_juros} após {dias_uteis_comprovados} dias: R$ {valor_futuro_com_pagamento_juros:.2f}\n"
-                                   f"Valor futuro após pagar R$ {pagamento_sem_juros} agora: R$ {valor_futuro_pagamento_sem_juros:.2f}")
+                                   f"Valor com pagamento de R$ {pagamento_com_juros} após {dias_uteis_comprovados} dias úteis: R$ {valor_futuro_com_pagamento_juros:.2f}\n"
+                                   f"Valor futuro após pagar R$ {pagamento_sem_juros} agora: R$ {valor_futuro_pagamento_sem_juros:.2f}\n"
+                                   f"Taxa mensal calculada: {taxa_mensal*100:.2f}%\n"
+                                   f"Total de dias entre as datas: {dias_totais_comprovados}\n"
+                                   f"Dias úteis entre as datas: {dias_uteis_comprovados}")
     except Exception as e:
         resultado_label.config(text=f"Erro: {str(e)}")  # Convertendo o erro para string para exibir
 
